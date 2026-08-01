@@ -1,12 +1,11 @@
-const container =
-  document.getElementById("downloads");
+const container = document.getElementById("downloads");
 
 chrome.tabs.query(
   {
     active: true,
     currentWindow: true
   },
-  async ([tab]) => {
+  ([tab]) => {
 
     chrome.tabs.sendMessage(
       tab.id,
@@ -15,7 +14,15 @@ chrome.tabs.query(
       },
       response => {
 
-        if (!response || !response.results.length) {
+        if (chrome.runtime.lastError) {
+          container.innerHTML =
+            "<p>Content script error</p>";
+          return;
+        }
+
+        console.log(response);
+
+        if (!response || !response.results?.length) {
 
           container.innerHTML =
             "<p>No download found</p>";
@@ -25,8 +32,6 @@ chrome.tabs.query(
 
         response.results.forEach(item => {
 
-          if (!item.href) return;
-
           const btn =
             document.createElement("button");
 
@@ -35,12 +40,28 @@ chrome.tabs.query(
 
           btn.innerText =
             item.text ||
+            item.title ||
             "Download";
 
           btn.onclick = () => {
 
+            let url = item.href;
+
+            if (!url) {
+              alert("No URL found");
+              return;
+            }
+
+            try {
+              url =
+                new URL(
+                  url,
+                  tab.url
+                ).href;
+            } catch(e) {}
+
             chrome.tabs.create({
-              url: item.href
+              url
             });
 
           };
